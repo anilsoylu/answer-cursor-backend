@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/anilsoylu/answer-backend/internal/models"
@@ -295,28 +296,27 @@ func (h *AuthHandler) UpdateUserStatus(c *gin.Context) {
 		return
 	}
 
+	// Get user ID from token
+	userID := c.GetUint("user_id")
+	
 	// Get requester's role
 	requesterRole := models.UserRole(c.GetString("role"))
 
-	if err := h.authService.UpdateUserStatus(req.UserID, req.Status, requesterRole); err != nil {
-		switch err.Error() {
-		case "SUPER_ADMIN's status cannot be changed":
-			c.JSON(http.StatusForbidden, gin.H{
-				"status": "error",
-				"error": gin.H{
-					"code":    "forbidden",
-					"message": "SUPER_ADMIN's status cannot be changed",
-				},
-			})
-		case "admins cannot change other admin's status":
-			c.JSON(http.StatusForbidden, gin.H{
-				"status": "error",
-				"error": gin.H{
-					"code":    "forbidden",
-					"message": "Admins cannot change other admin's status",
-				},
-			})
-		case "user not found":
+	// Get target user ID from URL parameter
+	targetUserID := userID // Varsayılan olarak kendi ID'si
+
+	if targetID := c.Query("user_id"); targetID != "" {
+		// Eğer query parameter varsa ve admin/super_admin ise başka kullanıcıyı güncelle
+		if requesterRole == models.RoleAdmin || requesterRole == models.RoleSuperAdmin {
+			if id, err := strconv.ParseUint(targetID, 10, 32); err == nil {
+				targetUserID = uint(id)
+			}
+		}
+	}
+
+	if err := h.authService.UpdateUserStatus(targetUserID, req.Status, requesterRole); err != nil {
+		switch err {
+		case services.ErrUserNotFound:
 			c.JSON(http.StatusNotFound, gin.H{
 				"status": "error",
 				"error": gin.H{
@@ -324,12 +324,28 @@ func (h *AuthHandler) UpdateUserStatus(c *gin.Context) {
 					"message": "User not found",
 				},
 			})
+		case services.ErrUnauthorized:
+			c.JSON(http.StatusUnauthorized, gin.H{
+				"status": "error",
+				"error": gin.H{
+					"code":    "unauthorized",
+					"message": "You are not authorized to perform this action",
+				},
+			})
+		case services.ErrForbidden:
+			c.JSON(http.StatusForbidden, gin.H{
+				"status": "error",
+				"error": gin.H{
+					"code":    "forbidden",
+					"message": "You cannot change this user's status",
+				},
+			})
 		default:
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"status": "error",
 				"error": gin.H{
 					"code":    "internal_error",
-					"message": "An error occurred while updating user status",
+					"message": "Failed to update user status",
 				},
 			})
 		}
@@ -357,8 +373,20 @@ func (h *AuthHandler) UpdateProfile(c *gin.Context) {
 		return
 	}
 
+	// Validasyon kontrolü
+	if err := h.validator.Struct(req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"status": "error",
+			"error": gin.H{
+				"code":    "validation_error",
+				"message": err.Error(),
+			},
+		})
+		return
+	}
+
 	userID := c.GetUint("user_id")
-	updatedUser, err := h.authService.UpdateProfile(userID, req.Username, req.Email, req.Password, req.Avatar)
+	updatedUser, err := h.authService.UpdateProfile(userID, req.Username, req.Email, req.Avatar)
 	if err != nil {
 		switch err {
 		case services.ErrUserNotFound:
@@ -392,7 +420,14 @@ func (h *AuthHandler) UpdateProfile(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"status": "success",
 		"data": gin.H{
-			"user":    updatedUser,
+			"user": gin.H{
+				"id":       updatedUser.ID,
+				"username": updatedUser.Username,
+				"email":    updatedUser.Email,
+				"avatar":   updatedUser.Avatar,
+				"status":   updatedUser.Status,
+				"role":     updatedUser.Role,
+			},
 			"message": "Profile updated successfully",
 		},
 	})

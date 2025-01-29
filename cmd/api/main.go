@@ -60,12 +60,12 @@ func main() {
 		protected.Use(middleware.AuthMiddleware())
 		{
 			// User routes
-			user := protected.Group("/user")
+			users := protected.Group("/users")
 			{
-				user.PUT("/role", authHandler.UpdateUserRole)
-				user.PUT("/status", authHandler.UpdateUserStatus)
-				user.PUT("/profile", authHandler.UpdateProfile)
-				user.PUT("/password", authHandler.ChangePassword)
+				users.PUT("/role", authHandler.UpdateUserRole)
+				users.PATCH("/status", authHandler.UpdateUserStatus)
+				users.PUT("/profile", authHandler.UpdateProfile)
+				users.PUT("/password", authHandler.ChangePassword)
 			}
 		}
 	}

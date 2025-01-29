@@ -38,7 +38,6 @@ type UpdateUserRoleRequest struct {
 
 // UpdateUserStatusRequest kullanıcı durumu güncelleme isteği için model
 type UpdateUserStatusRequest struct {
-	UserID uint       `json:"user_id" validate:"required"`
 	Status UserStatus `json:"status" validate:"required,oneof=active passive banned"`
 }
 
@@ -46,6 +45,5 @@ type UpdateUserStatusRequest struct {
 type UpdateProfileRequest struct {
 	Username string `json:"username,omitempty" validate:"omitempty,min=3,max=50"`
 	Email    string `json:"email,omitempty" validate:"omitempty,email"`
-	Password string `json:"password,omitempty" validate:"omitempty,min=6"`
 	Avatar   string `json:"avatar,omitempty"`
 } 

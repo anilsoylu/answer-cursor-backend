@@ -122,11 +122,22 @@ func (s *AuthService) UpdateUserStatus(userID uint, newStatus models.UserStatus,
 
 	// Check permissions
 	if user.Role == models.RoleSuperAdmin {
-		return errors.New("SUPER_ADMIN's status cannot be changed")
+		return ErrForbidden
 	}
 
-	if requesterRole == models.RoleAdmin && user.Role == models.RoleAdmin {
-		return errors.New("admins cannot change other admin's status")
+	// Kullanıcı kendi durumunu güncelleyebilir
+	if requesterRole == models.RoleUser || requesterRole == models.RoleEditor {
+		// Normal kullanıcılar sadece kendi durumlarını active ve passive yapabilir
+		if newStatus == models.StatusBanned {
+			return ErrForbidden
+		}
+	} else if requesterRole == models.RoleAdmin {
+		// Admin başka bir admin'in durumunu değiştiremez
+		if user.Role == models.RoleAdmin {
+			return ErrForbidden
+		}
+	} else if requesterRole != models.RoleSuperAdmin {
+		return ErrUnauthorized
 	}
 
 	user.Status = newStatus
@@ -137,7 +148,7 @@ func (s *AuthService) UpdateUserStatus(userID uint, newStatus models.UserStatus,
 	return nil
 }
 
-func (s *AuthService) UpdateProfile(userID uint, username, email, password, avatar string) (*models.User, error) {
+func (s *AuthService) UpdateProfile(userID uint, username, email, avatar string) (*models.User, error) {
 	var user models.User
 	if err := s.db.First(&user, userID).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -161,14 +172,6 @@ func (s *AuthService) UpdateProfile(userID uint, username, email, password, avat
 			return nil, ErrDuplicateEntry
 		}
 		user.Email = email
-	}
-
-	if password != "" {
-		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
-		if err != nil {
-			return nil, err
-		}
-		user.Password = string(hashedPassword)
 	}
 
 	if avatar != "" {

@@ -134,6 +134,124 @@ Authenticate a user and receive a JWT token.
 }
 ```
 
+### Update User Status
+
+```http
+PATCH /api/v1/users/status
+```
+
+#### Request Headers
+
+| Name            | Type     | Description                                  |
+| --------------- | -------- | -------------------------------------------- |
+| `Authorization` | `string` | **Required**. JWT token with `Bearer` prefix |
+
+#### Query Parameters
+
+| Name      | Type     | Description                                                   |
+| --------- | -------- | ------------------------------------------------------------- |
+| `user_id` | `number` | **Optional**. Target user ID (Only for ADMIN and SUPER_ADMIN) |
+
+#### Request Body
+
+```json
+{
+    "status": "active" | "passive" | "banned"
+}
+```
+
+#### Success Response
+
+```json
+{
+  "status": "success",
+  "data": {
+    "message": "User status updated successfully"
+  }
+}
+```
+
+#### Error Response
+
+```json
+{
+    "status": "error",
+    "error": {
+        "code": "validation_error" | "unauthorized" | "forbidden" | "not_found" | "internal_error",
+        "message": "Error message"
+    }
+}
+```
+
+#### Notes
+
+- Users can update their own status (only `active` and `passive`)
+- `ADMIN` and `SUPER_ADMIN` can update other users' status using `user_id` query parameter
+- `ADMIN` cannot change other admin's status
+- `SUPER_ADMIN` status cannot be changed
+- Valid status values are: `active`, `passive`, `banned`
+
+### Update User Profile
+
+```http
+PUT /api/v1/users/profile
+```
+
+#### Request Headers
+
+| Name            | Type     | Description                                  |
+| --------------- | -------- | -------------------------------------------- |
+| `Authorization` | `string` | **Required**. JWT token with `Bearer` prefix |
+
+#### Request Body
+
+```json
+{
+  "username": "string", // Optional, min: 3 chars
+  "email": "string", // Optional, valid email
+  "avatar": "string" // Optional
+}
+```
+
+#### Success Response
+
+```json
+{
+  "status": "success",
+  "data": {
+    "user": {
+      "id": 1,
+      "username": "string",
+      "email": "string",
+      "avatar": "string",
+      "status": "active",
+      "role": "USER"
+    },
+    "message": "Profile updated successfully"
+  }
+}
+```
+
+#### Error Response
+
+```json
+{
+    "status": "error",
+    "error": {
+        "code": "validation_error" | "not_found" | "conflict" | "internal_error",
+        "message": "Error message"
+    }
+}
+```
+
+#### Notes
+
+- All fields in request body are optional
+- Username must be at least 3 characters long
+- Email must be valid
+- Username and email must be unique
+- Password update is handled by a separate endpoint
+
 ## 🔄 Response Codes
 
 | Status Code | Description           |
