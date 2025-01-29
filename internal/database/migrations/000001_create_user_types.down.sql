@@ -1,8 +1,8 @@
--- Users tablosunu eski haline getir
-ALTER TABLE users 
-    ALTER COLUMN status TYPE varchar(10) USING status::varchar(10),
-    ALTER COLUMN role TYPE varchar(15) USING role::varchar(15);
+-- Önce frozen kolonlarını kaldır
+ALTER TABLE users
+    DROP COLUMN IF EXISTS frozen_reason,
+    DROP COLUMN IF EXISTS frozen_date;
 
--- Enum tipleri sil
+-- Enum tiplerini kaldır
 DROP TYPE IF EXISTS user_status;
 DROP TYPE IF EXISTS user_role; 

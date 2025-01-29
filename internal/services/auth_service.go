@@ -307,4 +307,36 @@ func (s *AuthService) BanUser(ctx context.Context, userID uint, banReason, banDu
 	}
 
 	return nil
+}
+
+// FreezeAccount hesabı dondurur (soft delete)
+func (s *AuthService) FreezeAccount(ctx context.Context, userID uint, freezeReason string, requesterRole models.UserRole) error {
+	var user models.User
+	if err := s.db.First(&user, userID).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return ErrUserNotFound
+		}
+		return err
+	}
+
+	// Hesap dondurma sebebi zorunlu
+	if freezeReason == "" {
+		return errors.New("freeze reason is required")
+	}
+
+	// Super admin hesabı dondurulamaz
+	if user.Role == models.RoleSuperAdmin {
+		return ErrForbidden
+	}
+
+	now := time.Now()
+	user.Status = models.StatusFrozen
+	user.FrozenReason = freezeReason
+	user.FrozenDate = &now
+
+	if err := s.db.Save(&user).Error; err != nil {
+		return err
+	}
+
+	return nil
 } 

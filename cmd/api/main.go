@@ -67,6 +67,7 @@ func main() {
 				users.PATCH("/status", authHandler.UpdateUserStatus)
 				users.PUT("/profile", authHandler.UpdateProfile)
 				users.POST("/ban", authHandler.BanUser)
+				users.POST("/freeze", authHandler.FreezeAccount)
 			}
 		}
 	}

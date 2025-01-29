@@ -11,6 +11,7 @@ const (
 	StatusActive  UserStatus = "active"
 	StatusPassive UserStatus = "passive"
 	StatusBanned  UserStatus = "banned"
+	StatusFrozen  UserStatus = "frozen"
 
 	RoleUser       UserRole = "USER"
 	RoleEditor     UserRole = "EDITOR"
@@ -31,6 +32,8 @@ type User struct {
 	LastLoginDate time.Time  `json:"last_login_date"`
 	BanReason     string     `json:"ban_reason,omitempty" gorm:"type:text"`
 	BanEndDate    *time.Time `json:"ban_end_date,omitempty"`
+	FrozenReason  string     `json:"frozen_reason,omitempty" gorm:"type:text"`
+	FrozenDate    *time.Time `json:"frozen_date,omitempty"`
 }
 
 // TableName GORM için tablo adını belirtir

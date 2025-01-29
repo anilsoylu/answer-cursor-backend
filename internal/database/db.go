@@ -91,7 +91,7 @@ func createEnumTypes() error {
 	db.Exec(`DROP TYPE IF EXISTS user_role CASCADE;`)
 
 	// Create user_status enum
-	if err := db.Exec(`CREATE TYPE user_status AS ENUM ('active', 'passive', 'banned');`).Error; err != nil {
+	if err := db.Exec(`CREATE TYPE user_status AS ENUM ('active', 'passive', 'banned', 'frozen');`).Error; err != nil {
 		return err
 	}
 

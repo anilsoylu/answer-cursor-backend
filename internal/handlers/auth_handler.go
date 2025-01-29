@@ -35,6 +35,11 @@ type AuthResponse struct {
 	} `json:"user"`
 }
 
+type FreezeAccountRequest struct {
+	UserID       uint   `json:"user_id" binding:"required"`
+	FreezeReason string `json:"freeze_reason" binding:"required"`
+}
+
 type AuthHandler struct {
 	authService *services.AuthService
 	validator   *validator.Validate
@@ -596,6 +601,73 @@ func (h *AuthHandler) BanUser(c *gin.Context) {
 		"status": "success",
 		"data": gin.H{
 			"message": "User banned successfully",
+		},
+	})
+}
+
+func (h *AuthHandler) FreezeAccount(c *gin.Context) {
+	var req FreezeAccountRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"status": "error",
+			"error": gin.H{
+				"code":    "validation_error",
+				"message": utils.GetValidationError(err),
+			},
+		})
+		return
+	}
+
+	// Get requester's ID and role
+	userID := c.GetUint("user_id")
+	requesterRole := c.GetString("role")
+
+	// Kullanıcı sadece kendi hesabını dondurabilir
+	if req.UserID != userID {
+		c.JSON(http.StatusForbidden, gin.H{
+			"status": "error",
+			"error": gin.H{
+				"code":    "forbidden",
+				"message": "You can only freeze your own account",
+			},
+		})
+		return
+	}
+
+	if err := h.authService.FreezeAccount(c.Request.Context(), userID, req.FreezeReason, models.UserRole(requesterRole)); err != nil {
+		switch err {
+		case services.ErrUserNotFound:
+			c.JSON(http.StatusNotFound, gin.H{
+				"status": "error",
+				"error": gin.H{
+					"code":    "user_not_found",
+					"message": "User not found",
+				},
+			})
+		case services.ErrForbidden:
+			c.JSON(http.StatusForbidden, gin.H{
+				"status": "error",
+				"error": gin.H{
+					"code":    "forbidden",
+					"message": "You don't have permission to freeze this account",
+				},
+			})
+		default:
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"status": "error",
+				"error": gin.H{
+					"code":    "internal_error",
+					"message": err.Error(),
+				},
+			})
+		}
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"status": "success",
+		"data": gin.H{
+			"message": "Account has been frozen successfully",
 		},
 	})
 } 

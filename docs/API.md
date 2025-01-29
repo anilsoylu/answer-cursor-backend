@@ -156,7 +156,7 @@ PATCH /api/v1/users/status
 
 ```json
 {
-    "status": "active" | "passive" | "banned"
+    "status": "active" | "passive" | "banned" | "frozen"
 }
 ```
 
@@ -416,6 +416,95 @@ _User Not Found (404 Not Found)_
   - 1_week: Ban for 7 days
   - 1_month: Ban for 30 days
   - permanent: Permanent ban
+
+### ❄️ Freeze Account
+
+**Endpoint:** `POST /api/v1/users/freeze`
+
+**Authentication Required:** Yes
+
+**Request Body:**
+
+```json
+{
+  "user_id": 123,
+  "freeze_reason": "User requested account freeze"
+}
+```
+
+**Validation Rules:**
+
+- `user_id`: Required
+- `freeze_reason`: Required
+
+**Success Response:**
+
+```json
+{
+  "status": "success",
+  "data": {
+    "message": "Account has been frozen successfully"
+  }
+}
+```
+
+**Error Responses:**
+
+_Invalid Request Body (400 Bad Request)_
+
+```json
+{
+  "status": "error",
+  "error": {
+    "code": "validation_error",
+    "message": "Validation failed"
+  }
+}
+```
+
+_Unauthorized (401 Unauthorized)_
+
+```json
+{
+  "status": "error",
+  "error": {
+    "code": "unauthorized",
+    "message": "You are not authorized to perform this action"
+  }
+}
+```
+
+_Forbidden (403 Forbidden)_
+
+```json
+{
+  "status": "error",
+  "error": {
+    "code": "forbidden",
+    "message": "You don't have permission to freeze this account"
+  }
+}
+```
+
+_User Not Found (404 Not Found)_
+
+```json
+{
+  "status": "error",
+  "error": {
+    "code": "not_found",
+    "message": "User not found"
+  }
+}
+```
+
+**Notes:**
+
+- Users can freeze their own accounts
+- Admin cannot freeze other admin accounts
+- Super admin accounts cannot be frozen
+- Freeze reason is required for all users
+- Frozen accounts cannot be accessed until unfrozen by an admin
 
 ## 🔄 Response Codes
 
