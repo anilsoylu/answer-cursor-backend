@@ -1,137 +1,91 @@
-# Answer Backend 🚀
+# Answer Backend
 
-A powerful Q&A platform built with Go and PostgreSQL, similar to Stack Overflow but in Turkish.
+🚀 Stack Overflow'un Türkçe versiyonu olan soru-cevap platformunun backend projesi.
 
-## Features 🌟
+## 🛠 Teknolojiler
 
-- User Management System
-
-  - Registration and Authentication
-  - Role-based Authorization
-  - Profile Management
-  - Password Management
-
-- Question Management (Coming Soon)
-
-  - Ask Questions
-  - Answer Questions
-  - Comment on Questions/Answers
-  - Vote Questions/Answers
-  - Accept Answers
-  - Tag Questions
-
-- Tag Management (Coming Soon)
-  - Create Tags
-  - Edit Tags
-  - Delete Tags
-  - Follow Tags
-
-## Tech Stack 💻
-
-- Go 1.22
+- Go
 - PostgreSQL
 - GORM
-- Gin Web Framework
+- Gin Framework
 - JWT Authentication
-- Validator
-- Air (Live Reload)
 
-## Prerequisites 📋
+## 🔥 Özellikler
 
-- Go 1.22 or higher
-- PostgreSQL 14 or higher
-- Make (optional)
+### 👤 Kullanıcı Yönetimi
 
-## Installation 🛠️
+- ✨ Kayıt ve Giriş
+- 🔒 JWT bazlı kimlik doğrulama
+- 👑 Rol bazlı yetkilendirme (USER, EDITOR, ADMIN, SUPER_ADMIN)
+- 🚫 Hesap dondurma ve banlama sistemi
+- 🗑️ Soft delete desteği
+- 🔄 Username ve email yeniden kullanım sistemi
 
-1. Clone the repository:
+### 🔐 Güvenlik
+
+- 🔒 Şifre hashleme (bcrypt)
+- 🛡️ CORS koruması
+- 🔑 JWT token bazlı kimlik doğrulama
+- 👮 Rol bazlı yetkilendirme
+
+### 💾 Veritabanı
+
+- 📊 PostgreSQL
+- 🔄 GORM ORM
+- 📈 Migration sistemi
+- 🏷️ Özel index'ler ve constraint'ler
+
+## 🚀 Kurulum
+
+1. Repoyu klonlayın:
 
 ```bash
 git clone https://github.com/anilsoylu/answer-backend.git
 ```
 
-2. Navigate to the project directory:
-
-```bash
-cd answer-backend
-```
-
-3. Copy the example environment file:
-
-```bash
-cp .env.example .env
-```
-
-4. Update the environment variables in `.env` file with your configuration.
-
-5. Install dependencies:
+2. Gerekli paketleri yükleyin:
 
 ```bash
 go mod download
 ```
 
-6. Run the application:
+3. `.env` dosyasını oluşturun:
+
+```bash
+cp .env.example .env
+```
+
+4. Migration'ları çalıştırın:
+
+```bash
+migrate -path internal/database/migrations -database "postgresql://user:password@localhost:5432/dbname?sslmode=disable" up
+```
+
+5. Uygulamayı başlatın:
 
 ```bash
 go run cmd/api/main.go
 ```
 
-For development with live reload:
+## 📝 Önemli Notlar
 
-```bash
-air
-```
+- Dondurulmuş veya silinmiş hesapların username ve email'leri yeni kayıtlar için kullanılabilir
+- Banlanmış hesapların username ve email'leri korunur
+- SUPER_ADMIN hesapları silinemez veya dondurulamaz
+- Her kullanıcı kendi hesabını silebilir
+- SUPER_ADMIN tüm hesapları yönetebilir
 
-## API Documentation 📚
+## 🤝 Katkıda Bulunma
 
-Detailed API documentation can be found in the [docs/API.md](docs/API.md) file.
+1. Fork yapın
+2. Feature branch oluşturun (`git checkout -b feature/amazing-feature`)
+3. Değişikliklerinizi commit edin (`git commit -m 'feat: add amazing feature'`)
+4. Branch'inizi push edin (`git push origin feature/amazing-feature`)
+5. Pull Request oluşturun
 
-## Project Structure 📁
+## 📄 Lisans
 
-```
-.
-├── cmd/
-│   └── api/
-│       └── main.go
-├── config/
-│   └── config.go
-├── docs/
-│   └── API.md
-├── internal/
-│   ├── database/
-│   │   └── db.go
-│   ├── handlers/
-│   │   └── auth_handler.go
-│   ├── models/
-│   │   ├── auth.go
-│   │   └── user.go
-│   └── services/
-│       └── auth_service.go
-├── pkg/
-│   ├── middleware/
-│   │   ├── auth.go
-│   │   └── cors.go
-│   └── utils/
-│       ├── jwt.go
-│       └── validator.go
-├── .env.example
-├── .gitignore
-├── go.mod
-├── go.sum
-└── README.md
-```
-
-## Contributing 🤝
-
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-## License 📄
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+MIT License - daha fazla detay için [LICENSE](LICENSE) dosyasına bakın.
 
 ## Contact 📧
 

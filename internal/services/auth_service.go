@@ -12,6 +12,10 @@ import (
 
 var (
 	ErrUserAlreadyExists   = errors.New("user already exists")
+	ErrUsernameTaken      = errors.New("username is already taken")
+	ErrEmailTaken         = errors.New("email is already taken")
+	ErrUserFrozen         = errors.New("this account is frozen, please contact support")
+	ErrUserBanned         = errors.New("this account is banned")
 	ErrInvalidCredentials  = errors.New("invalid credentials")
 	ErrUserNotActive       = errors.New("user is not active")
 	ErrUserNotFound        = errors.New("user not found")
@@ -29,10 +33,23 @@ func NewAuthService(db *gorm.DB) *AuthService {
 }
 
 func (s *AuthService) Register(user *models.User) error {
-	// Check if user already exists
+	// Check if username is taken by an active or banned user
 	var existingUser models.User
-	if err := s.db.Where("username = ? OR email = ?", user.Username, user.Email).First(&existingUser).Error; err == nil {
-		return ErrUserAlreadyExists
+	if err := s.db.Where("username = ? AND deleted_at IS NULL", user.Username).First(&existingUser).Error; err == nil {
+		if existingUser.Status == models.StatusBanned {
+			return ErrUserBanned
+		}
+		return ErrUsernameTaken
+	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
+		return err
+	}
+
+	// Check if email is taken by an active or banned user
+	if err := s.db.Where("email = ? AND deleted_at IS NULL", user.Email).First(&existingUser).Error; err == nil {
+		if existingUser.Status == models.StatusBanned {
+			return ErrUserBanned
+		}
+		return ErrEmailTaken
 	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
 		return err
 	}
@@ -44,12 +61,20 @@ func (s *AuthService) Register(user *models.User) error {
 	}
 	user.Password = string(hashedPassword)
 
-	// Create user
-	if err := s.db.Create(user).Error; err != nil {
+	// Create user with transaction
+	tx := s.db.Begin()
+	if err := tx.Create(user).Error; err != nil {
+		tx.Rollback()
 		return err
 	}
 
-	return nil
+	// Reload user to get the correct ID
+	if err := tx.First(user, user.ID).Error; err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	return tx.Commit().Error
 }
 
 func (s *AuthService) Login(identifier, password string) (*models.User, error) {
@@ -319,22 +344,63 @@ func (s *AuthService) FreezeAccount(ctx context.Context, userID uint, freezeReas
 		return err
 	}
 
-	// Hesap dondurma sebebi zorunlu
-	if freezeReason == "" {
-		return errors.New("freeze reason is required")
-	}
-
 	// Super admin hesabı dondurulamaz
 	if user.Role == models.RoleSuperAdmin {
 		return ErrForbidden
 	}
 
-	now := time.Now()
+	// Hesap dondurma sebebi zorunlu
+	if freezeReason == "" {
+		return errors.New("freeze reason is required")
+	}
+
+	// Soft delete işlemi
+	if err := s.db.Delete(&user).Error; err != nil {
+		return err
+	}
+
+	// Dondurma bilgilerini güncelle
 	user.Status = models.StatusFrozen
 	user.FrozenReason = freezeReason
+	now := time.Now()
 	user.FrozenDate = &now
 
-	if err := s.db.Save(&user).Error; err != nil {
+	// Soft delete edilmiş kaydı güncelle
+	if err := s.db.Unscoped().Save(&user).Error; err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// DeleteAccount hesabı siler (soft delete)
+func (s *AuthService) DeleteAccount(ctx context.Context, userID uint, requesterID uint, requesterRole models.UserRole) error {
+	var user models.User
+	if err := s.db.First(&user, userID).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return ErrUserNotFound
+		}
+		return err
+	}
+
+	// Kullanıcı kendi hesabını silebilir veya SUPER_ADMIN başka hesapları silebilir
+	if userID != requesterID && requesterRole != models.RoleSuperAdmin {
+		return ErrUnauthorized
+	}
+
+	// Super admin hesabı silinemez
+	if user.Role == models.RoleSuperAdmin {
+		return ErrForbidden
+	}
+
+	// Kullanıcıyı soft delete yap
+	if err := s.db.Delete(&user).Error; err != nil {
+		return err
+	}
+
+	// Status'u güncelle
+	user.Status = models.StatusFrozen
+	if err := s.db.Unscoped().Save(&user).Error; err != nil {
 		return err
 	}
 

@@ -35,9 +35,18 @@ Register a new user account.
 
 ```json
 {
-  "success": true,
+  "status": "success",
   "data": {
-    "message": "User registered successfully"
+    "token": "string",
+    "user": {
+      "id": "number",
+      "username": "string",
+      "email": "string",
+      "status": "string",
+      "role": "string",
+      "avatar": "string",
+      "created_at": "string"
+    }
   }
 }
 ```
@@ -48,10 +57,10 @@ Register a new user account.
 
 ```json
 {
-  "success": false,
+  "status": "error",
   "error": {
-    "code": "VALIDATION_ERROR",
-    "message": "Username must be at least 3 characters long"
+    "code": "username_taken",
+    "message": "Username is already taken"
   }
 }
 ```
@@ -60,10 +69,22 @@ Register a new user account.
 
 ```json
 {
-  "success": false,
+  "status": "error",
   "error": {
-    "code": "USERNAME_EXISTS",
-    "message": "Username already exists"
+    "code": "email_taken",
+    "message": "Email is already taken"
+  }
+}
+```
+
+- **Code**: `403 Forbidden`
+
+```json
+{
+  "status": "error",
+  "error": {
+    "code": "account_banned",
+    "message": "This account is banned"
   }
 }
 ```
@@ -99,11 +120,18 @@ Authenticate a user and receive a JWT token.
 
 ```json
 {
-  "success": true,
+  "status": "success",
   "data": {
     "token": "string",
-    "token_type": "Bearer",
-    "expires_in": 86400
+    "user": {
+      "id": "number",
+      "username": "string",
+      "email": "string",
+      "status": "string",
+      "role": "string",
+      "avatar": "string",
+      "created_at": "string"
+    }
   }
 }
 ```
@@ -114,7 +142,7 @@ Authenticate a user and receive a JWT token.
 
 ```json
 {
-  "success": false,
+  "status": "error",
   "error": {
     "code": "VALIDATION_ERROR",
     "message": "Identifier is required"
@@ -126,7 +154,7 @@ Authenticate a user and receive a JWT token.
 
 ```json
 {
-  "success": false,
+  "status": "error",
   "error": {
     "code": "INVALID_CREDENTIALS",
     "message": "Invalid identifier or password"
@@ -558,3 +586,61 @@ Authorization: Bearer <token>
 | INVALID_CREDENTIALS   | Invalid identifier or password |
 | ACCOUNT_INACTIVE      | User account is not active     |
 | INTERNAL_SERVER_ERROR | Unexpected server error        |
+
+## 👤 User Management Endpoints
+
+### 🗑️ Delete Account
+
+```http
+DELETE /api/v1/users/:id
+```
+
+**Request Headers:**
+
+```
+Authorization: Bearer <token>
+```
+
+**Success Response (200):**
+
+```json
+{
+  "status": "success",
+  "data": {
+    "message": "Account has been soft deleted successfully"
+  }
+}
+```
+
+**Error Responses:**
+
+```json
+{
+  "status": "error",
+  "error": {
+    "code": "unauthorized",
+    "message": "You can only delete your own account or be a SUPER_ADMIN to delete others"
+  }
+}
+```
+
+```json
+{
+  "status": "error",
+  "error": {
+    "code": "forbidden",
+    "message": "SUPER_ADMIN accounts cannot be deleted"
+  }
+}
+```
+
+## 📝 Önemli Notlar
+
+- Tüm endpoint'ler için başarılı yanıtlar `status: "success"` içerir
+- Tüm hatalar `status: "error"` içerir
+- Protected endpoint'ler için `Authorization` header'ı gereklidir
+- Dondurulmuş veya silinmiş hesapların username ve email'leri yeni kayıtlar için kullanılabilir
+- Banlanmış hesapların username ve email'leri korunur
+- SUPER_ADMIN hesapları silinemez veya dondurulamaz
+- Her kullanıcı kendi hesabını silebilir
+- SUPER_ADMIN tüm hesapları yönetebilir

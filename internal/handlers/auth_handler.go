@@ -66,23 +66,47 @@ func (h *AuthHandler) Register(c *gin.Context) {
 	}
 
 	user := &models.User{
-		Username:    req.Username,
-		Email:       req.Email,
-		Password:    req.Password,
-		Status:      models.StatusActive,
-		Role:        models.RoleUser, // Always starts with USER role
-		CreatedAt:   time.Now(),
+		Username:      req.Username,
+		Email:         req.Email,
+		Password:      req.Password,
+		Status:        models.StatusActive,
+		Role:          models.RoleUser, // Always starts with USER role
+		CreatedAt:     time.Now(),
 		LastLoginDate: time.Now(),
 	}
 
 	if err := h.authService.Register(user); err != nil {
 		switch err {
-		case services.ErrUserAlreadyExists:
+		case services.ErrUsernameTaken:
 			c.JSON(http.StatusConflict, gin.H{
 				"status": "error",
 				"error": gin.H{
-					"code":    "user_exists",
-					"message": "User already exists",
+					"code":    "username_taken",
+					"message": "Username is already taken",
+				},
+			})
+		case services.ErrEmailTaken:
+			c.JSON(http.StatusConflict, gin.H{
+				"status": "error",
+				"error": gin.H{
+					"code":    "email_taken",
+					"message": "Email is already taken",
+				},
+			})
+		case services.ErrUserFrozen:
+			c.JSON(http.StatusForbidden, gin.H{
+				"status": "error",
+				"error": gin.H{
+					"code":    "account_frozen",
+					"message": "This account is frozen, please contact support",
+				},
+			})
+		case services.ErrUserBanned:
+			c.JSON(http.StatusForbidden, gin.H{
+				"status": "error",
+				"error": gin.H{
+					"code":    "account_banned",
+					"message": "This account is banned",
 				},
 			})
 		default:
@@ -668,6 +692,71 @@ func (h *AuthHandler) FreezeAccount(c *gin.Context) {
 		"status": "success",
 		"data": gin.H{
 			"message": "Account has been frozen successfully",
+		},
+	})
+}
+
+// DeleteAccount kullanıcıyı siler (soft delete)
+func (h *AuthHandler) DeleteAccount(c *gin.Context) {
+	// Get user ID from URL parameter
+	userID, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"status": "error",
+			"error": gin.H{
+				"code":    "invalid_id",
+				"message": "Invalid user ID",
+			},
+		})
+		return
+	}
+
+	// Get requester's ID and role
+	requesterID := c.GetUint("user_id")
+	requesterRole := models.UserRole(c.GetString("role"))
+
+	if err := h.authService.DeleteAccount(c.Request.Context(), uint(userID), requesterID, requesterRole); err != nil {
+		switch err {
+		case services.ErrUserNotFound:
+			c.JSON(http.StatusNotFound, gin.H{
+				"status": "error",
+				"error": gin.H{
+					"code":    "user_not_found",
+					"message": "User not found",
+				},
+			})
+		case services.ErrUnauthorized:
+			c.JSON(http.StatusUnauthorized, gin.H{
+				"status": "error",
+				"error": gin.H{
+					"code":    "unauthorized",
+					"message": "You can only delete your own account or be a SUPER_ADMIN to delete others",
+				},
+			})
+		case services.ErrForbidden:
+			c.JSON(http.StatusForbidden, gin.H{
+				"status": "error",
+				"error": gin.H{
+					"code":    "forbidden",
+					"message": "SUPER_ADMIN accounts cannot be deleted",
+				},
+			})
+		default:
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"status": "error",
+				"error": gin.H{
+					"code":    "internal_error",
+					"message": "Failed to delete account",
+				},
+			})
+		}
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"status": "success",
+		"data": gin.H{
+			"message": "Account has been soft deleted successfully",
 		},
 	})
 } 

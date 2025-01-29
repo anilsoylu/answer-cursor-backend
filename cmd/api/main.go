@@ -68,6 +68,7 @@ func main() {
 				users.PUT("/profile", authHandler.UpdateProfile)
 				users.POST("/ban", authHandler.BanUser)
 				users.POST("/freeze", authHandler.FreezeAccount)
+				users.DELETE("/:id", authHandler.DeleteAccount)
 			}
 		}
 	}
