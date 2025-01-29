@@ -3,6 +3,8 @@ package services
 import (
 	"context"
 	"errors"
+	"log"
+	"reflect"
 	"time"
 
 	"github.com/anilsoylu/answer-backend/internal/models"
@@ -33,48 +35,47 @@ func NewAuthService(db *gorm.DB) *AuthService {
 }
 
 func (s *AuthService) Register(user *models.User) error {
-	// Check if username is taken by an active or banned user
-	var existingUser models.User
-	if err := s.db.Where("username = ? AND deleted_at IS NULL", user.Username).First(&existingUser).Error; err == nil {
-		if existingUser.Status == models.StatusBanned {
-			return ErrUserBanned
-		}
-		return ErrUsernameTaken
-	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
-		return err
-	}
-
-	// Check if email is taken by an active or banned user
-	if err := s.db.Where("email = ? AND deleted_at IS NULL", user.Email).First(&existingUser).Error; err == nil {
-		if existingUser.Status == models.StatusBanned {
-			return ErrUserBanned
-		}
-		return ErrEmailTaken
-	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
-		return err
-	}
-
 	// Hash password
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
 	if err != nil {
+		log.Printf("Error hashing password: %v", err)
 		return err
 	}
 	user.Password = string(hashedPassword)
 
-	// Create user with transaction
-	tx := s.db.Begin()
-	if err := tx.Create(user).Error; err != nil {
-		tx.Rollback()
+	// Check if username exists
+	var existingUser models.User
+	if err := s.db.Where("username = ? AND deleted_at IS NULL", user.Username).First(&existingUser).Error; err == nil {
+		log.Printf("Registration failed: Username '%s' is already taken", user.Username)
+		return errors.New("username already exists")
+	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
+		log.Printf("Error checking username existence: %v", err)
+		return err
+	}
+	log.Printf("Username '%s' is available for registration", user.Username)
+
+	// Check if email exists
+	if err := s.db.Where("email = ? AND deleted_at IS NULL", user.Email).First(&existingUser).Error; err == nil {
+		log.Printf("Registration failed: Email '%s' is already registered", user.Email)
+		return errors.New("email already exists")
+	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
+		log.Printf("Error checking email existence: %v", err)
+		return err
+	}
+	log.Printf("Email '%s' is available for registration", user.Email)
+
+	// Set default values
+	user.CreatedAt = time.Now()
+	user.LastLoginDate = time.Now()
+
+	// Create user
+	if err := s.db.Create(user).Error; err != nil {
+		log.Printf("Error creating user: %v", err)
 		return err
 	}
 
-	// Reload user to get the correct ID
-	if err := tx.First(user, user.ID).Error; err != nil {
-		tx.Rollback()
-		return err
-	}
-
-	return tx.Commit().Error
+	log.Printf("User registered successfully: %s (%s)", user.Username, user.Email)
+	return nil
 }
 
 func (s *AuthService) Login(identifier, password string) (*models.User, error) {
@@ -402,6 +403,64 @@ func (s *AuthService) DeleteAccount(ctx context.Context, userID uint, requesterI
 	user.Status = models.StatusFrozen
 	if err := s.db.Unscoped().Save(&user).Error; err != nil {
 		return err
+	}
+
+	return nil
+}
+
+func (s *AuthService) AdminLogin(identifier, password string) (*models.User, error) {
+	var user models.User
+	if err := s.db.Where("email = ? OR username = ?", identifier, identifier).First(&user).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, ErrInvalidCredentials
+		}
+		return nil, err
+	}
+
+	// Check password
+	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password)); err != nil {
+		return nil, ErrInvalidCredentials
+	}
+
+	// Check if user is admin
+	if user.Role != models.RoleAdmin && user.Role != models.RoleSuperAdmin {
+		return nil, ErrUnauthorized
+	}
+
+	// Check if user is active
+	if user.Status != models.StatusActive {
+		return nil, ErrUserNotActive
+	}
+
+	// Update last login date
+	user.LastLoginDate = time.Now()
+	if err := s.db.Save(&user).Error; err != nil {
+		return nil, err
+	}
+
+	return &user, nil
+}
+
+func (s *AuthService) GetAdminProfile(userID uint, profile interface{}) error {
+	var user models.User
+	if err := s.db.First(&user, userID).Error; err != nil {
+		return err
+	}
+
+	// Check if user is admin
+	if user.Role != models.RoleAdmin && user.Role != models.RoleSuperAdmin {
+		return errors.New("admin privileges required")
+	}
+
+	// Map user data to profile
+	val := reflect.ValueOf(profile).Elem()
+	userVal := reflect.ValueOf(user)
+
+	for i := 0; i < val.NumField(); i++ {
+		field := val.Type().Field(i)
+		if userField := userVal.FieldByName(field.Name); userField.IsValid() {
+			val.Field(i).Set(userField)
+		}
 	}
 
 	return nil
