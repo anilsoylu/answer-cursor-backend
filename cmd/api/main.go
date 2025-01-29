@@ -6,7 +6,9 @@ import (
 	"os"
 
 	"github.com/anilsoylu/answer-backend/internal/database"
+	"github.com/anilsoylu/answer-backend/internal/database/seed"
 	"github.com/anilsoylu/answer-backend/internal/handlers"
+	"github.com/anilsoylu/answer-backend/internal/routes"
 	"github.com/anilsoylu/answer-backend/internal/services"
 	"github.com/anilsoylu/answer-backend/pkg/middleware"
 	"github.com/gin-gonic/gin"
@@ -33,6 +35,11 @@ func main() {
 		log.Fatal("Could not initialize database: ", err)
 	}
 
+	// Create super admin user
+	if err := seed.CreateSuperAdmin(database.DB()); err != nil {
+		log.Fatal("Failed to create super admin user:", err)
+	}
+
 	// Initialize services
 	authService := services.NewAuthService(database.DB())
 
@@ -45,33 +52,9 @@ func main() {
 	// CORS middleware
 	router.Use(middleware.CORS())
 
-	// API routes
-	api := router.Group("/api/v1")
-	{
-		// Auth routes
-		auth := api.Group("/auth")
-		{
-			auth.POST("/register", authHandler.Register)
-			auth.POST("/login", authHandler.Login)
-			auth.PUT("/password", middleware.AuthMiddleware(), authHandler.UpdatePassword)
-		}
-
-		// Protected routes
-		protected := api.Group("")
-		protected.Use(middleware.AuthMiddleware())
-		{
-			// User routes
-			users := protected.Group("/users")
-			{
-				users.PUT("/role", authHandler.UpdateUserRole)
-				users.PATCH("/status", authHandler.UpdateUserStatus)
-				users.PUT("/profile", authHandler.UpdateProfile)
-				users.POST("/ban", authHandler.BanUser)
-				users.POST("/freeze", authHandler.FreezeAccount)
-				users.DELETE("/:id", authHandler.DeleteAccount)
-			}
-		}
-	}
+	// Setup routes
+	routes.SetupAuthRoutes(router, authHandler)
+	routes.SetupAdminRoutes(router, authHandler)
 
 	// Start server
 	port := os.Getenv("PORT")

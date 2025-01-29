@@ -8,12 +8,13 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
-func GenerateJWT(userID uint, username, email string, role models.UserRole) (string, error) {
+func GenerateJWT(userID uint, username, email string, role models.UserRole, status models.UserStatus) (string, error) {
 	claims := jwt.MapClaims{
 		"user_id":  userID,
 		"username": username,
 		"email":    email,
 		"role":     role,
+		"status":   status,
 		"exp":      time.Now().Add(time.Hour * 24).Unix(), // 24 hours
 		"iat":      time.Now().Unix(),
 	}

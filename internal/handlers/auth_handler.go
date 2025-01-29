@@ -121,7 +121,7 @@ func (h *AuthHandler) Register(c *gin.Context) {
 		return
 	}
 
-	token, err := utils.GenerateJWT(user.ID, user.Username, user.Email, user.Role)
+	token, err := utils.GenerateJWT(user.ID, user.Username, user.Email, user.Role, user.Status)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"status": "error",
@@ -194,7 +194,7 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		return
 	}
 
-	token, err := utils.GenerateJWT(user.ID, user.Username, user.Email, user.Role)
+	token, err := utils.GenerateJWT(user.ID, user.Username, user.Email, user.Role, user.Status)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"status": "error",
@@ -757,6 +757,117 @@ func (h *AuthHandler) DeleteAccount(c *gin.Context) {
 		"status": "success",
 		"data": gin.H{
 			"message": "Account has been soft deleted successfully",
+		},
+	})
+}
+
+func (h *AuthHandler) AdminLogin(c *gin.Context) {
+	var req LoginRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"status": "error",
+			"error": gin.H{
+				"code":    "validation_error",
+				"message": utils.GetValidationError(err),
+			},
+		})
+		return
+	}
+
+	user, err := h.authService.AdminLogin(req.Identifier, req.Password)
+	if err != nil {
+		switch err {
+		case services.ErrInvalidCredentials:
+			c.JSON(http.StatusUnauthorized, gin.H{
+				"status": "error",
+				"error": gin.H{
+					"code":    "invalid_credentials",
+					"message": "Invalid username/email or password",
+				},
+			})
+		case services.ErrUnauthorized:
+			c.JSON(http.StatusForbidden, gin.H{
+				"status": "error",
+				"error": gin.H{
+					"code":    "unauthorized",
+					"message": "Admin privileges required",
+				},
+			})
+		case services.ErrUserNotActive:
+			c.JSON(http.StatusForbidden, gin.H{
+				"status": "error",
+				"error": gin.H{
+					"code":    "user_not_active",
+					"message": "User account is not active",
+				},
+			})
+		default:
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"status": "error",
+				"error": gin.H{
+					"code":    "internal_error",
+					"message": err.Error(),
+				},
+			})
+		}
+		return
+	}
+
+	token, err := utils.GenerateJWT(user.ID, user.Username, user.Email, user.Role, user.Status)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"status": "error",
+			"error": gin.H{
+				"code":    "token_error",
+				"message": "Failed to generate token",
+			},
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"status": "success",
+		"data": gin.H{
+			"token": token,
+			"user": gin.H{
+				"id":         user.ID,
+				"username":   user.Username,
+				"email":      user.Email,
+				"status":     user.Status,
+				"role":       user.Role,
+				"avatar":     user.Avatar,
+				"created_at": user.CreatedAt,
+			},
+		},
+	})
+}
+
+func (h *AuthHandler) Me(c *gin.Context) {
+	userID := c.GetUint("user_id")
+	var user models.User
+	if err := h.authService.GetUserByID(userID, &user); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"status": "error",
+			"error": gin.H{
+				"code":    "internal_error",
+				"message": "Failed to get user profile",
+			},
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"status": "success",
+		"data": gin.H{
+			"user": gin.H{
+				"id":         user.ID,
+				"username":   user.Username,
+				"email":      user.Email,
+				"status":     user.Status,
+				"role":       user.Role,
+				"avatar":     user.Avatar,
+				"created_at": user.CreatedAt,
+			},
 		},
 	})
 } 
