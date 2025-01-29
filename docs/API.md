@@ -252,6 +252,77 @@ PUT /api/v1/users/profile
 - Username and email must be unique
 - Password update is handled by a separate endpoint
 
+### 🔐 Update Password
+
+**Endpoint:** `PUT /api/v1/auth/password`
+
+**Authentication Required:** Yes
+
+**Request Body:**
+
+```json
+{
+  "current_password": "string",
+  "new_password": "string",
+  "confirm_password": "string"
+}
+```
+
+**Validation Rules:**
+
+- `current_password`: Required
+- `new_password`: Required, minimum 6 characters
+- `confirm_password`: Required, must match new_password
+
+**Success Response:**
+
+```json
+{
+  "status": "success",
+  "data": {
+    "message": "Password updated successfully"
+  }
+}
+```
+
+**Error Responses:**
+
+_Invalid Request Body (400 Bad Request)_
+
+```json
+{
+  "status": "error",
+  "error": {
+    "code": "validation_error",
+    "message": "Validation failed"
+  }
+}
+```
+
+_Current Password Incorrect (400 Bad Request)_
+
+```json
+{
+  "status": "error",
+  "error": {
+    "code": "validation_error",
+    "message": "Current password is incorrect"
+  }
+}
+```
+
+_Server Error (500 Internal Server Error)_
+
+```json
+{
+  "status": "error",
+  "error": {
+    "code": "internal_error",
+    "message": "Failed to update password"
+  }
+}
+```
+
 ## 🔄 Response Codes
 
 | Status Code | Description           |

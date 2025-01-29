@@ -53,6 +53,7 @@ func main() {
 		{
 			auth.POST("/register", authHandler.Register)
 			auth.POST("/login", authHandler.Login)
+			auth.PUT("/password", middleware.AuthMiddleware(), authHandler.UpdatePassword)
 		}
 
 		// Protected routes
@@ -65,7 +66,6 @@ func main() {
 				users.PUT("/role", authHandler.UpdateUserRole)
 				users.PATCH("/status", authHandler.UpdateUserStatus)
 				users.PUT("/profile", authHandler.UpdateProfile)
-				users.PUT("/password", authHandler.ChangePassword)
 			}
 		}
 	}

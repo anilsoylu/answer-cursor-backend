@@ -476,4 +476,51 @@ func (h *AuthHandler) ChangePassword(c *gin.Context) {
 			"message": "Password updated successfully",
 		},
 	})
+}
+
+// UpdatePassword şifre güncelleme handler'ı
+func (h *AuthHandler) UpdatePassword(c *gin.Context) {
+	userID := c.GetUint("user_id")
+	
+	var req models.UpdatePasswordRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"status": "error",
+			"error": gin.H{
+				"code":    "validation_error",
+				"message": utils.GetValidationError(err),
+			},
+		})
+		return
+	}
+
+	if err := h.validator.Struct(req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"status": "error",
+			"error": gin.H{
+				"code":    "validation_error",
+				"message": err.Error(),
+			},
+		})
+		return
+	}
+
+	err := h.authService.UpdatePassword(c.Request.Context(), userID, req)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"status": "error",
+			"error": gin.H{
+				"code":    "internal_error",
+				"message": "Failed to update password",
+			},
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"status": "success",
+		"data": gin.H{
+			"message": "Password updated successfully",
+		},
+	})
 } 

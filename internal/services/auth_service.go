@@ -1,6 +1,7 @@
 package services
 
 import (
+	"context"
 	"errors"
 	"time"
 
@@ -220,5 +221,35 @@ func (s *AuthService) GetUserByID(userID uint, user *models.User) error {
 		}
 		return err
 	}
+	return nil
+}
+
+// UpdatePassword kullanıcı şifresini günceller
+func (s *AuthService) UpdatePassword(ctx context.Context, userID uint, req models.UpdatePasswordRequest) error {
+	var user models.User
+	if err := s.db.First(&user, userID).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return ErrUserNotFound
+		}
+		return err
+	}
+
+	// Mevcut şifrenin doğruluğunu kontrol et
+	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(req.CurrentPassword)); err != nil {
+		return errors.New("current password is incorrect")
+	}
+
+	// Yeni şifreyi hashle
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.NewPassword), bcrypt.DefaultCost)
+	if err != nil {
+		return err
+	}
+
+	// Şifreyi güncelle
+	user.Password = string(hashedPassword)
+	if err := s.db.Save(&user).Error; err != nil {
+		return err
+	}
+
 	return nil
 } 
