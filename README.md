@@ -1,8 +1,8 @@
 # Answer Backend
 
-🚀 Stack Overflow'un Türkçe versiyonu olan soru-cevap platformunun backend projesi.
+🚀 Backend project for a Q&A platform - Turkish version of Stack Overflow.
 
-## 🛠 Teknolojiler
+## 🛠 Technologies
 
 - Go
 - PostgreSQL
@@ -10,82 +10,82 @@
 - Gin Framework
 - JWT Authentication
 
-## 🔥 Özellikler
+## 🔥 Features
 
-### 👤 Kullanıcı Yönetimi
+### 👤 User Management
 
-- ✨ Kayıt ve Giriş
-- 🔒 JWT bazlı kimlik doğrulama
-- 👑 Rol bazlı yetkilendirme (USER, EDITOR, ADMIN, SUPER_ADMIN)
-- 🚫 Hesap dondurma ve banlama sistemi
-- 🗑️ Soft delete desteği
-- 🔄 Username ve email yeniden kullanım sistemi
+- ✨ Registration and Login
+- 🔒 JWT-based Authentication
+- 👑 Role-based Authorization (USER, EDITOR, ADMIN, SUPER_ADMIN)
+- 🚫 Account freezing and banning system
+- 🗑️ Soft delete support
+- 🔄 Username and email reuse system
 
-### 🔐 Güvenlik
+### 🔐 Security
 
-- 🔒 Şifre hashleme (bcrypt)
-- 🛡️ CORS koruması
-- 🔑 JWT token bazlı kimlik doğrulama
-- 👮 Rol bazlı yetkilendirme
+- 🔒 Password hashing (bcrypt)
+- 🛡️ CORS protection
+- 🔑 JWT token-based authentication
+- 👮 Role-based authorization
 
-### 💾 Veritabanı
+### 💾 Database
 
 - 📊 PostgreSQL
 - 🔄 GORM ORM
-- 📈 Migration sistemi
-- 🏷️ Özel index'ler ve constraint'ler
+- 📈 Migration system
+- 🏷️ Custom indexes and constraints
 
-## 🚀 Kurulum
+## 🚀 Installation
 
-1. Repoyu klonlayın:
+1. Clone the repository:
 
 ```bash
 git clone https://github.com/anilsoylu/answer-backend.git
 ```
 
-2. Gerekli paketleri yükleyin:
+2. Install required packages:
 
 ```bash
 go mod download
 ```
 
-3. `.env` dosyasını oluşturun:
+3. Create `.env` file:
 
 ```bash
 cp .env.example .env
 ```
 
-4. Migration'ları çalıştırın:
+4. Run migrations:
 
 ```bash
 migrate -path internal/database/migrations -database "postgresql://user:password@localhost:5432/dbname?sslmode=disable" up
 ```
 
-5. Uygulamayı başlatın:
+5. Start the application:
 
 ```bash
 go run cmd/api/main.go
 ```
 
-## 📝 Önemli Notlar
+## 📝 Important Notes
 
-- Dondurulmuş veya silinmiş hesapların username ve email'leri yeni kayıtlar için kullanılabilir
-- Banlanmış hesapların username ve email'leri korunur
-- SUPER_ADMIN hesapları silinemez veya dondurulamaz
-- Her kullanıcı kendi hesabını silebilir
-- SUPER_ADMIN tüm hesapları yönetebilir
+- Usernames and emails from frozen or deleted accounts can be used for new registrations
+- Usernames and emails from banned accounts are protected
+- SUPER_ADMIN accounts cannot be deleted or frozen
+- Users can delete their own accounts
+- SUPER_ADMIN can manage all accounts
 
-## 🤝 Katkıda Bulunma
+## 🤝 Contributing
 
-1. Fork yapın
-2. Feature branch oluşturun (`git checkout -b feature/amazing-feature`)
-3. Değişikliklerinizi commit edin (`git commit -m 'feat: add amazing feature'`)
-4. Branch'inizi push edin (`git push origin feature/amazing-feature`)
-5. Pull Request oluşturun
+1. Fork the project
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'feat: add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
 
-## 📄 Lisans
+## 📄 License
 
-MIT License - daha fazla detay için [LICENSE](LICENSE) dosyasına bakın.
+MIT License - see [LICENSE](LICENSE) for more details.
 
 ## Contact 📧
 

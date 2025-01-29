@@ -7,7 +7,7 @@ import (
 	"github.com/anilsoylu/answer-backend/internal/utils/errors"
 )
 
-// Response genel yanıt yapısı
+// Response represents the general response structure
 type Response struct {
 	Success bool        `json:"success"`
 	Data    interface{} `json:"data,omitempty"`

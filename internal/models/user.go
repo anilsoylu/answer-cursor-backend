@@ -21,6 +21,7 @@ const (
 	RoleSuperAdmin UserRole = "SUPER_ADMIN"
 )
 
+// User represents the user model in the database
 type User struct {
 	ID            uint            `json:"id" gorm:"primaryKey"`
 	Username      string          `json:"username" gorm:"uniqueIndex:idx_username_active,where:deleted_at IS NULL AND status != 'frozen';not null"`
@@ -39,12 +40,12 @@ type User struct {
 	DeletedAt     gorm.DeletedAt  `json:"-" gorm:"index"`
 }
 
-// TableName GORM için tablo adını belirtir
+// TableName specifies the table name for GORM
 func (User) TableName() string {
 	return "users"
 }
 
-// ChangePasswordRequest şifre değiştirme isteği için model
+// ChangePasswordRequest represents the model for password change request
 type ChangePasswordRequest struct {
 	CurrentPassword string `json:"current_password" validate:"required"`
 	NewPassword     string `json:"new_password" validate:"required,min=6"`

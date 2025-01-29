@@ -2,7 +2,7 @@ package errors
 
 import "net/http"
 
-// AppError uygulama genelinde kullanılacak hata yapısı
+// AppError represents the application-wide error structure
 type AppError struct {
 	StatusCode int    `json:"-"`
 	Code       string `json:"code"`
