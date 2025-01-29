@@ -36,17 +36,16 @@ Register a new user account.
 ```json
 {
   "status": "success",
+  "message": "User registered successfully",
   "data": {
-    "token": "string",
-    "user": {
-      "id": "number",
-      "username": "string",
-      "email": "string",
-      "status": "string",
-      "role": "string",
-      "avatar": "string",
-      "created_at": "string"
-    }
+    "id": "integer",
+    "username": "string",
+    "email": "string",
+    "avatar": "string",
+    "status": "string",
+    "role": "string",
+    "created_at": "timestamp",
+    "last_login_date": "timestamp"
   }
 }
 ```
@@ -121,16 +120,18 @@ Authenticate a user and receive a JWT token.
 ```json
 {
   "status": "success",
+  "message": "Login successful",
   "data": {
     "token": "string",
     "user": {
-      "id": "number",
+      "id": "integer",
       "username": "string",
       "email": "string",
+      "avatar": "string",
       "status": "string",
       "role": "string",
-      "avatar": "string",
-      "created_at": "string"
+      "created_at": "timestamp",
+      "last_login_date": "timestamp"
     }
   }
 }
@@ -644,3 +645,331 @@ Authorization: Bearer <token>
 - SUPER_ADMIN hesapları silinemez veya dondurulamaz
 - Her kullanıcı kendi hesabını silebilir
 - SUPER_ADMIN tüm hesapları yönetebilir
+
+## 👑 Admin Endpoints
+
+### 🔑 Admin Login
+
+**Endpoint:** `POST /api/v1/admin/login`
+
+**Request Body:**
+
+```json
+{
+  "identifier": "string", // email or username
+  "password": "string"
+}
+```
+
+**Success Response (200):**
+
+```json
+{
+  "status": "success",
+  "data": {
+    "token": "string",
+    "user": {
+      "id": "number",
+      "username": "string",
+      "email": "string",
+      "status": "string",
+      "role": "string",
+      "avatar": "string",
+      "created_at": "string"
+    }
+  }
+}
+```
+
+**Error Responses:**
+
+```json
+{
+  "status": "error",
+  "error": {
+    "code": "validation_error | unauthorized",
+    "message": "Error message"
+  }
+}
+```
+
+### 👤 Get Admin Profile
+
+**Endpoint:** `GET /api/v1/admin/me`
+
+**Headers:**
+
+```
+Authorization: Bearer <token>
+```
+
+**Success Response (200):**
+
+```json
+{
+  "status": "success",
+  "data": {
+    "user": {
+      "id": "number",
+      "username": "string",
+      "email": "string",
+      "status": "string",
+      "role": "string",
+      "avatar": "string",
+      "created_at": "string"
+    }
+  }
+}
+```
+
+**Error Responses:**
+
+```json
+{
+  "status": "error",
+  "error": {
+    "code": "unauthorized | forbidden | internal_error",
+    "message": "Error message"
+  }
+}
+```
+
+**Notes:**
+
+- Only users with `ADMIN` or `SUPER_ADMIN` role can access admin endpoints
+- Admin account must be `active` to access admin endpoints
+- `passive`, `frozen`, or soft deleted accounts cannot access admin endpoints
+
+## 🔄 Response Codes
+
+| Status Code | Description           |
+| ----------- | --------------------- |
+| 200         | Success               |
+| 201         | Created               |
+| 400         | Bad Request           |
+| 401         | Unauthorized          |
+| 403         | Forbidden             |
+| 404         | Not Found             |
+| 409         | Conflict              |
+| 422         | Unprocessable Entity  |
+| 429         | Too Many Requests     |
+| 500         | Internal Server Error |
+
+## 🔒 Authentication
+
+All protected endpoints require a JWT token in the Authorization header:
+
+```http
+Authorization: Bearer <token>
+```
+
+## ⚠️ Error Response Format
+
+```json
+{
+  "status": "error",
+  "message": "Error message here",
+  "errors": [
+    {
+      "field": "field_name",
+      "message": "Error message for this field"
+    }
+  ]
+}
+```
+
+## Error Codes 🚨
+
+| Code                  | Description                    |
+| --------------------- | ------------------------------ |
+| VALIDATION_ERROR      | Request validation failed      |
+| INVALID_INPUT         | Invalid input parameters       |
+| UNAUTHORIZED          | Authentication required        |
+| FORBIDDEN             | Access forbidden               |
+| NOT_FOUND             | Resource not found             |
+| USERNAME_EXISTS       | Username is already taken      |
+| EMAIL_EXISTS          | Email is already registered    |
+| INVALID_CREDENTIALS   | Invalid identifier or password |
+| ACCOUNT_INACTIVE      | User account is not active     |
+| INTERNAL_SERVER_ERROR | Unexpected server error        |
+
+## 👤 User Management Endpoints
+
+### 🗑️ Delete Account
+
+```http
+DELETE /api/v1/users/:id
+```
+
+**Request Headers:**
+
+```
+Authorization: Bearer <token>
+```
+
+**Success Response (200):**
+
+```json
+{
+  "status": "success",
+  "data": {
+    "message": "Account has been soft deleted successfully"
+  }
+}
+```
+
+**Error Responses:**
+
+```json
+{
+  "status": "error",
+  "error": {
+    "code": "unauthorized",
+    "message": "You can only delete your own account or be a SUPER_ADMIN to delete others"
+  }
+}
+```
+
+```json
+{
+  "status": "error",
+  "error": {
+    "code": "forbidden",
+    "message": "SUPER_ADMIN accounts cannot be deleted"
+  }
+}
+```
+
+## 📝 Önemli Notlar
+
+- Tüm endpoint'ler için başarılı yanıtlar `status: "success"` içerir
+- Tüm hatalar `status: "error"` içerir
+- Protected endpoint'ler için `Authorization` header'ı gereklidir
+- Dondurulmuş veya silinmiş hesapların username ve email'leri yeni kayıtlar için kullanılabilir
+- Banlanmış hesapların username ve email'leri korunur
+- SUPER_ADMIN hesapları silinemez veya dondurulamaz
+- Her kullanıcı kendi hesabını silebilir
+- SUPER_ADMIN tüm hesapları yönetebilir
+
+## 👑 Admin Endpoints
+
+### 🔑 Admin Login
+
+**Endpoint:** `POST /api/v1/admin/login`
+
+**Request Body:**
+
+```json
+{
+  "identifier": "string", // email or username
+  "password": "string"
+}
+```
+
+**Success Response (200):**
+
+```json
+{
+  "status": "success",
+  "data": {
+    "token": "string",
+    "user": {
+      "id": "number",
+      "username": "string",
+      "email": "string",
+      "status": "string",
+      "role": "string",
+      "avatar": "string",
+      "created_at": "string"
+    }
+  }
+}
+```
+
+**Error Responses:**
+
+```json
+{
+  "status": "error",
+  "error": {
+    "code": "validation_error | unauthorized",
+    "message": "Error message"
+  }
+}
+```
+
+### 👤 Get Admin Profile
+
+**Endpoint:** `GET /api/v1/admin/me`
+
+**Headers:**
+
+```
+Authorization: Bearer <token>
+```
+
+**Success Response (200):**
+
+```json
+{
+  "status": "success",
+  "data": {
+    "user": {
+      "id": "number",
+      "username": "string",
+      "email": "string",
+      "status": "string",
+      "role": "string",
+      "avatar": "string",
+      "created_at": "string"
+    }
+  }
+}
+```
+
+**Error Responses:**
+
+```json
+{
+  "status": "error",
+  "error": {
+    "code": "unauthorized | forbidden | internal_error",
+    "message": "Error message"
+  }
+}
+```
+
+**Notes:**
+
+- Only users with `ADMIN` or `SUPER_ADMIN` role can access admin endpoints
+- Admin account must be `active` to access admin endpoints
+- `passive`, `frozen`, or soft deleted accounts cannot access admin endpoints
+
+## 🎯 Rate Limiting 🚦
+
+- Anonymous: 100 requests per minute
+- Authenticated: 1000 requests per minute
+
+## 📋 Data Types
+
+### User Status
+
+- `active`
+- `passive`
+- `banned`
+- `frozen`
+
+### User Roles
+
+- `USER`
+- `EDITOR`
+- `ADMIN`
+- `SUPER_ADMIN`
+
+## 🔄 Recent Changes
+
+- ✨ Enhanced error messages and logging
+- 🔒 Improved authentication flow
+- 👤 Admin seeding from environment variables
+- 🎯 Optimized database operations
+- 📝 Better registration process
