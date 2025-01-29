@@ -523,4 +523,79 @@ func (h *AuthHandler) UpdatePassword(c *gin.Context) {
 			"message": "Password updated successfully",
 		},
 	})
+}
+
+// BanUser kullanıcı banlama handler'ı
+func (h *AuthHandler) BanUser(c *gin.Context) {
+	var req models.BanUserRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"status": "error",
+			"error": gin.H{
+				"code":    "validation_error",
+				"message": utils.GetValidationError(err),
+			},
+		})
+		return
+	}
+
+	// Validasyon kontrolü
+	if err := h.validator.Struct(req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"status": "error",
+			"error": gin.H{
+				"code":    "validation_error",
+				"message": err.Error(),
+			},
+		})
+		return
+	}
+
+	// İşlemi yapan kullanıcının rolünü al
+	requesterRole := models.UserRole(c.GetString("role"))
+
+	if err := h.authService.BanUser(c.Request.Context(), req.UserID, req.BanReason, req.BanDuration, requesterRole); err != nil {
+		switch err {
+		case services.ErrUserNotFound:
+			c.JSON(http.StatusNotFound, gin.H{
+				"status": "error",
+				"error": gin.H{
+					"code":    "not_found",
+					"message": "User not found",
+				},
+			})
+		case services.ErrUnauthorized:
+			c.JSON(http.StatusUnauthorized, gin.H{
+				"status": "error",
+				"error": gin.H{
+					"code":    "unauthorized",
+					"message": "You are not authorized to ban users",
+				},
+			})
+		case services.ErrForbidden:
+			c.JSON(http.StatusForbidden, gin.H{
+				"status": "error",
+				"error": gin.H{
+					"code":    "forbidden",
+					"message": "You cannot ban this user",
+				},
+			})
+		default:
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"status": "error",
+				"error": gin.H{
+					"code":    "internal_error",
+					"message": "Failed to ban user",
+				},
+			})
+		}
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"status": "success",
+		"data": gin.H{
+			"message": "User banned successfully",
+		},
+	})
 } 

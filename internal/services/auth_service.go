@@ -252,4 +252,59 @@ func (s *AuthService) UpdatePassword(ctx context.Context, userID uint, req model
 	}
 
 	return nil
+}
+
+// BanUser kullanıcıyı banlar
+func (s *AuthService) BanUser(ctx context.Context, userID uint, banReason, banDuration string, requesterRole models.UserRole) error {
+	var user models.User
+	if err := s.db.First(&user, userID).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return ErrUserNotFound
+		}
+		return err
+	}
+
+	// Yetki kontrolü
+	if requesterRole != models.RoleAdmin && requesterRole != models.RoleSuperAdmin {
+		return ErrUnauthorized
+	}
+
+	// Admin, diğer adminleri ve super adminleri banlayamaz
+	if requesterRole == models.RoleAdmin && (user.Role == models.RoleAdmin || user.Role == models.RoleSuperAdmin) {
+		return ErrForbidden
+	}
+
+	// Super admin'i kimse banlayamaz
+	if user.Role == models.RoleSuperAdmin {
+		return ErrForbidden
+	}
+
+	// Ban süresini hesapla
+	var banEndDate *time.Time
+	now := time.Now()
+
+	switch banDuration {
+	case "1_day":
+		end := now.Add(24 * time.Hour)
+		banEndDate = &end
+	case "1_week":
+		end := now.Add(7 * 24 * time.Hour)
+		banEndDate = &end
+	case "1_month":
+		end := now.AddDate(0, 1, 0)
+		banEndDate = &end
+	case "permanent":
+		banEndDate = nil
+	}
+
+	// Kullanıcıyı banla
+	user.Status = models.StatusBanned
+	user.BanReason = banReason
+	user.BanEndDate = banEndDate
+
+	if err := s.db.Save(&user).Error; err != nil {
+		return err
+	}
+
+	return nil
 } 

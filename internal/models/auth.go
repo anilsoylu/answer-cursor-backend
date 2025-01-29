@@ -53,4 +53,11 @@ type UpdatePasswordRequest struct {
 	CurrentPassword string `json:"current_password" validate:"required"`
 	NewPassword     string `json:"new_password" validate:"required,min=6"`
 	ConfirmPassword string `json:"confirm_password" validate:"required,eqfield=NewPassword"`
+}
+
+// BanUserRequest kullanıcı banlama isteği için model
+type BanUserRequest struct {
+	UserID      uint   `json:"user_id" validate:"required"`
+	BanReason   string `json:"ban_reason" validate:"required,min=10,max=500"`
+	BanDuration string `json:"ban_duration" validate:"required,oneof=1_day 1_week 1_month permanent"`
 } 

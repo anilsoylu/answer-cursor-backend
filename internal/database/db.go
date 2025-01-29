@@ -62,6 +62,11 @@ func InitDB(config *DBConfig) error {
 
 	log.Println("Connected Successfully to Database")
 
+	// Create enum types
+	if err := createEnumTypes(); err != nil {
+		return fmt.Errorf("failed to create enum types: %v", err)
+	}
+
 	// Auto Migrate
 	if err = db.AutoMigrate(&models.User{}); err != nil {
 		return fmt.Errorf("failed to migrate database: %v", err)
@@ -77,4 +82,23 @@ func DB() *gorm.DB {
 		log.Fatal("Database connection not initialized")
 	}
 	return db
+}
+
+// createEnumTypes creates the required enum types in PostgreSQL
+func createEnumTypes() error {
+	// Drop existing enum types if they exist
+	db.Exec(`DROP TYPE IF EXISTS user_status CASCADE;`)
+	db.Exec(`DROP TYPE IF EXISTS user_role CASCADE;`)
+
+	// Create user_status enum
+	if err := db.Exec(`CREATE TYPE user_status AS ENUM ('active', 'passive', 'banned');`).Error; err != nil {
+		return err
+	}
+
+	// Create user_role enum
+	if err := db.Exec(`CREATE TYPE user_role AS ENUM ('USER', 'EDITOR', 'ADMIN', 'SUPER_ADMIN');`).Error; err != nil {
+		return err
+	}
+
+	return nil
 } 

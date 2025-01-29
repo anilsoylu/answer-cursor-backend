@@ -66,6 +66,7 @@ func main() {
 				users.PUT("/role", authHandler.UpdateUserRole)
 				users.PATCH("/status", authHandler.UpdateUserStatus)
 				users.PUT("/profile", authHandler.UpdateProfile)
+				users.POST("/ban", authHandler.BanUser)
 			}
 		}
 	}

@@ -323,6 +323,100 @@ _Server Error (500 Internal Server Error)_
 }
 ```
 
+### 🚫 Ban User
+
+**Endpoint:** `POST /api/v1/users/ban`
+
+**Authentication Required:** Yes (Admin or Super Admin only)
+
+**Request Body:**
+
+```json
+{
+  "user_id": 123,
+  "ban_reason": "Violation of community guidelines - Repeated spam",
+  "ban_duration": "1_day" // Options: 1_day, 1_week, 1_month, permanent
+}
+```
+
+**Validation Rules:**
+
+- `user_id`: Required
+- `ban_reason`: Required, minimum 10 characters, maximum 500 characters
+- `ban_duration`: Required, must be one of: 1_day, 1_week, 1_month, permanent
+
+**Success Response:**
+
+```json
+{
+  "status": "success",
+  "data": {
+    "message": "User banned successfully"
+  }
+}
+```
+
+**Error Responses:**
+
+_Invalid Request Body (400 Bad Request)_
+
+```json
+{
+  "status": "error",
+  "error": {
+    "code": "validation_error",
+    "message": "Validation failed"
+  }
+}
+```
+
+_Unauthorized (401 Unauthorized)_
+
+```json
+{
+  "status": "error",
+  "error": {
+    "code": "unauthorized",
+    "message": "You are not authorized to ban users"
+  }
+}
+```
+
+_Forbidden (403 Forbidden)_
+
+```json
+{
+  "status": "error",
+  "error": {
+    "code": "forbidden",
+    "message": "You cannot ban this user"
+  }
+}
+```
+
+_User Not Found (404 Not Found)_
+
+```json
+{
+  "status": "error",
+  "error": {
+    "code": "not_found",
+    "message": "User not found"
+  }
+}
+```
+
+**Notes:**
+
+- Only Admin and Super Admin can ban users
+- Admin cannot ban other admins or super admins
+- Super admin cannot be banned
+- Ban duration options:
+  - 1_day: Ban for 24 hours
+  - 1_week: Ban for 7 days
+  - 1_month: Ban for 30 days
+  - permanent: Permanent ban
+
 ## 🔄 Response Codes
 
 | Status Code | Description           |
